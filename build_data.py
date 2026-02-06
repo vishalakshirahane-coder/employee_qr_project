@@ -3,7 +3,7 @@ import json
 import qrcode
 import os
 
-BASE_URL = "https://YOUR_GITHUB_USERNAME.github.io/employee_qr_project/view.html"
+BASE_URL = "https://github.com/vishalakshirahane-coder/employee_qr_project/blob/main/view.html"
 QR_FOLDER = "QR_Output"
 
 os.makedirs(QR_FOLDER, exist_ok=True)
