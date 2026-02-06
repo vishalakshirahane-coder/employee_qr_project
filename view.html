@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Employee Details</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+}
+table {
+  border-collapse: collapse;
+  max-width: 600px;
+}
+td {
+  border: 1px solid #444;
+  padding: 8px;
+}
+td:first-child {
+  font-weight: bold;
+  background: #f2f2f2;
+}
+</style>
+</head>
+<body>
+
+<h2>Details</h2>
+<table id="table"></table>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const id = parseInt(params.get("id"));
+
+fetch("employees.json")
+  .then(res => res.json())
+  .then(data => {
+    const record = data[id];
+    const table = document.getElementById("table");
+
+    for (const key in record) {
+      if (record[key] !== "") {
+        table.innerHTML += `
+          <tr>
+            <td>${key}</td>
+            <td>${record[key]}</td>
+          </tr>
+        `;
+      }
+    }
+  });
+</script>
+
+</body>
+</html>
