@@ -13,8 +13,8 @@ from weasyprint import HTML
 # =====================================================
 
 OUTPUT_FOLDER = "QR_Output"
-GIT_BRANCH = "dev"
-COMMIT_MSG = "Added updated Employees QR codes"
+GIT_BRANCH = "main"
+COMMIT_MSG = "- Deploying Updated QR codes of employees"
 
 BASE_URL = "https://employee-qr-project.vercel.app/QR_Output"
 
