@@ -227,11 +227,26 @@ print("\n🎉 All QR files generated")
 # =====================================================
 # STEP 7: AUTO GIT PUSH
 # =====================================================
+
 def auto_git_push():
 
     try:
 
-        print("\n🚀 Pushing to GitHub...")
+        print("\n🔍 Checking for changes in QR_Output...")
+
+        # Check if QR_Output has changes
+        result = subprocess.run(
+            ["git", "status", "--porcelain", OUTPUT_FOLDER],
+            capture_output=True,
+            text=True
+        )
+
+        if result.stdout.strip() == "":
+            print("ℹ️ No changes detected. Nothing to commit.")
+            return
+
+
+        print("✅ Changes found. Pushing to GitHub...")
 
 
         subprocess.run(
@@ -249,14 +264,13 @@ def auto_git_push():
             check=True
         )
 
-        print("✅ Git Push Successful")
+        print("🚀 Git Push Successful")
 
 
     except subprocess.CalledProcessError as e:
 
         print("❌ Git Push Failed")
         print(e)
-
 
 
 auto_git_push()
