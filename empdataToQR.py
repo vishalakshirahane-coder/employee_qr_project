@@ -6,6 +6,7 @@ import re
 import shutil
 import subprocess
 from weasyprint import HTML
+import hashlib
 
 
 # =====================================================
@@ -13,26 +14,33 @@ from weasyprint import HTML
 # =====================================================
 
 OUTPUT_FOLDER = "QR_Output"
+HASH_FILE = ".excel_md5"
+
 GIT_BRANCH = "main"
 COMMIT_MSG = "- Deploying Updated QR codes of employees"
 
 BASE_URL = "https://employee-qr-project.vercel.app/QR_Output"
 
 
-# =====================================================
-# STEP 1: CLEAN OLD QR_Output
-# =====================================================
-
-if os.path.exists(OUTPUT_FOLDER):
-    print("🧹 Removing old QR_Output folder...")
-    shutil.rmtree(OUTPUT_FOLDER)
-
-os.makedirs(OUTPUT_FOLDER)
-print("✅ Fresh QR_Output created")
-
 
 # =====================================================
-# STEP 2: FIND EXCEL FILE
+# UTILITY: CALCULATE FILE MD5
+# =====================================================
+
+def calculate_file_md5(file_path):
+
+    md5 = hashlib.md5()
+
+    with open(file_path, "rb") as f:
+
+        for chunk in iter(lambda: f.read(8192), b""):
+            md5.update(chunk)
+
+    return md5.hexdigest()
+
+
+# =====================================================
+# STEP 1: FIND EXCEL FILE
 # =====================================================
 
 excel_files = [f for f in os.listdir('.') if f.endswith('.xlsx')]
@@ -46,6 +54,52 @@ if len(excel_files) > 1:
 excel_file = excel_files[0]
 
 print(f"📄 Using Excel: {excel_file}")
+
+
+
+# =====================================================
+# STEP 1.1.: CHECK IF EXCEL CHANGED
+# =====================================================
+
+print("\n🔍 Checking Excel file hash...")
+
+current_md5 = calculate_file_md5(excel_file)
+
+
+# Read old hash
+if os.path.exists(HASH_FILE):
+
+    with open(HASH_FILE, "r") as f:
+        old_md5 = f.read().strip()
+
+else:
+    old_md5 = None
+
+
+print("📌 Old MD5:", old_md5)
+print("📌 New MD5:", current_md5)
+
+
+# If no change → exit
+if current_md5 == old_md5:
+
+    print("\nℹ️ Excel not changed. Nothing to do.")
+    exit(0)
+
+
+print("\n✅ Excel changed. Regenerating files...")
+
+
+# =====================================================
+# STEP 2: CLEAN OLD QR_Output
+# =====================================================
+
+if os.path.exists(OUTPUT_FOLDER):
+    print("🧹 Removing old QR_Output folder...")
+    shutil.rmtree(OUTPUT_FOLDER)
+
+os.makedirs(OUTPUT_FOLDER)
+print("✅ Fresh QR_Output created")
 
 
 # =====================================================
@@ -74,22 +128,7 @@ if name_column:
 else:
     print("⚠️ Name column not found. Using auto-generated Employee IDs.")
 
-'''
-name_column = None
 
-for col in df.columns:
-    col_lower = str(col).lower()
-
-    if "name" in col_lower or "नाव" in col or "संपूर्ण" in col:
-        name_column = col
-        break
-
-if name_column is None:
-    raise Exception("❌ Name column not found")
-
-print(f"✅ Name column: {name_column}")
-
-'''
 
 # =====================================================
 # STEP 5: HTML TEMPLATE
@@ -150,6 +189,9 @@ th {{
 # STEP 6: GENERATE FILES
 # =====================================================
 
+print("\n⚙️ Generating QR files...\n")
+
+
 for index, row in df.iterrows():
 
     # Get employee name safely
@@ -157,9 +199,9 @@ for index, row in df.iterrows():
         employee_name = str(row[name_column]).strip()
 
         if employee_name == "" or employee_name.lower() == "nan":
-            employee_name = f"Employee_{index+1}"
+            employee_name = f"Participant_{index+1}"
     else:
-        employee_name = f"Employee_{index+1}"
+        employee_name = f"Participant_{index+1}"
 
 
     # Safe filename
@@ -225,52 +267,50 @@ print("\n🎉 All QR files generated")
 
 
 # =====================================================
-# STEP 7: AUTO GIT PUSH
+# STEP 7: SAVE NEW HASH
+# =====================================================
+
+with open(HASH_FILE, "w") as f:
+    f.write(current_md5)
+
+
+print("💾 Excel hash updated")
+
+# =====================================================
+# STEP 8: AUTO GIT PUSH
 # =====================================================
 
 def auto_git_push():
 
     try:
 
-        print("\n🔍 Checking for changes in QR_Output...")
-
-        # Check if QR_Output has changes
-        result = subprocess.run(
-            ["git", "status", "--porcelain", OUTPUT_FOLDER],
-            capture_output=True,
-            text=True
-        )
-
-        if result.stdout.strip() == "":
-            print("ℹ️ No changes detected. Nothing to commit.")
-            return
-
-
-        print("✅ Changes found. Pushing to GitHub...")
+        print("\n🚀 Pushing to GitHub...")
 
 
         subprocess.run(
-            ["git", "add", OUTPUT_FOLDER],
+            ["git", "add", OUTPUT_FOLDER, HASH_FILE],
             check=True
         )
+
 
         subprocess.run(
             ["git", "commit", "-m", COMMIT_MSG],
             check=True
         )
 
+
         subprocess.run(
             ["git", "push", "origin", GIT_BRANCH],
             check=True
         )
 
-        print("🚀 Git Push Successful")
+
+        print("✅ Git push successful")
 
 
     except subprocess.CalledProcessError as e:
 
-        print("❌ Git Push Failed")
+        print("❌ Git push failed")
         print(e)
-
 
 auto_git_push()
