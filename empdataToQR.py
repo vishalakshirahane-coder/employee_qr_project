@@ -58,7 +58,23 @@ df = pd.read_excel(excel_file)
 # =====================================================
 # STEP 4: FIND NAME COLUMN
 # =====================================================
+name_column = None
 
+for col in df.columns:
+    col_lower = str(col).lower()
+    if (
+        "name" in col_lower
+        or "नाव" in col
+    ):
+        name_column = col
+        break
+
+if name_column:
+    print(f"✅ Name column detected: {name_column}")
+else:
+    print("⚠️ Name column not found. Using auto-generated Employee IDs.")
+
+'''
 name_column = None
 
 for col in df.columns:
@@ -73,6 +89,7 @@ if name_column is None:
 
 print(f"✅ Name column: {name_column}")
 
+'''
 
 # =====================================================
 # STEP 5: HTML TEMPLATE
@@ -135,10 +152,14 @@ th {{
 
 for index, row in df.iterrows():
 
-    employee_name = str(row[name_column]).strip()
+    # Get employee name safely
+    if name_column:
+        employee_name = str(row[name_column]).strip()
 
-    if employee_name == "" or employee_name.lower() == "nan":
-        continue
+        if employee_name == "" or employee_name.lower() == "nan":
+            employee_name = f"Employee_{index+1}"
+    else:
+        employee_name = f"Employee_{index+1}"
 
 
     # Safe filename
@@ -206,7 +227,6 @@ print("\n🎉 All QR files generated")
 # =====================================================
 # STEP 7: AUTO GIT PUSH
 # =====================================================
-
 def auto_git_push():
 
     try:
@@ -240,4 +260,3 @@ def auto_git_push():
 
 
 auto_git_push()
-
